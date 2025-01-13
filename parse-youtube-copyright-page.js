@@ -29,25 +29,38 @@ function formatTimestamp(timestamp) {
     return `${convertToHMS(start)} - ${convertToHMS(end)}`;
 }
 
-// Get all the elements for song titles, artists, and timestamps
-const songTitles = document.querySelectorAll('.ytcr-video-content-list-claim-row.style-scope.title-text');
-const artists = document.querySelectorAll('#artists');
-const timestamps = document.querySelectorAll('.ytcr-video-content-list-claim-row.style-scope.remove-default-style.time-interval-button');
+// Get all the rows containing song titles, artists, and timestamps
+const rows = document.querySelectorAll('.ytcr-video-content-list-claim-row.style-scope');
 
 // Initialize an array to store the results
 const extractedData = [];
+const seenRows = new Set(); // To avoid duplicate rows
 
-// Loop through the elements and extract text
-songTitles.forEach((titleElement, index) => {
-    const title = titleElement.innerText.trim();
-    const artist = artists[index]?.innerText.trim() || "Unknown Artist";
-    const rawTimestamp = timestamps[index]?.innerText.trim() || "Unknown Timestamp";
+// Loop through each row to extract information
+rows.forEach((row) => {
+    // Extract song title
+    const titleElement = row.querySelector('.title-text');
+    const title = titleElement ? titleElement.innerText.trim() : "";
 
-    // Reformat the timestamp
-    const formattedTimestamp = rawTimestamp.includes('-') ? formatTimestamp(rawTimestamp) : rawTimestamp;
+    // Extract artist
+    const artistElement = row.querySelector('#artists');
+    const artist = artistElement ? artistElement.innerText.trim() : "Unknown Artist"; // Default to "Unknown Artist"
 
-    // Combine into the required format
-    extractedData.push(`${title} ${artist} ${formattedTimestamp}`);
+    // Extract timestamp
+    const timestampElement = row.querySelector('.time-interval-button');
+    const rawTimestamp = timestampElement ? timestampElement.innerText.trim() : null;
+
+    // Only process the row if title and timestamp exist
+    if (title && rawTimestamp) {
+        const formattedTimestamp = rawTimestamp.includes('-') ? formatTimestamp(rawTimestamp) : rawTimestamp;
+        const uniqueKey = `${title}-${artist}-${formattedTimestamp}`;
+
+        // Avoid processing duplicates
+        if (!seenRows.has(uniqueKey)) {
+            extractedData.push(`${title} ${artist} ${formattedTimestamp}`);
+            seenRows.add(uniqueKey); // Mark this row as processed
+        }
+    }
 });
 
 // Output the results
